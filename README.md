@@ -10,54 +10,54 @@ Built for a single ego node — you — to answer the question: **"Who in my net
 
 ```mermaid
 flowchart TD
-    subgraph DATA["📁 Data Sources (bring your own)"]
-        F[Feedspot\n16 CSV — blogs & publishers]
-        X[XList / Scoble\n26 CSV — AI people & companies]
-        C[Clutch\n108 CSV — agencies across 5 categories]
-        FB[FacebookGroups\n5 CSV + 3 XLSX — communities]
-        SK[Skool\nSkoolCommunities.csv + SkoolDM.csv]
+    subgraph DATA["Data Sources - bring your own"]
+        F["Feedspot<br/>16 CSV - blogs and publishers"]
+        X["XList / Scoble<br/>26 CSV - AI people and companies"]
+        C["Clutch<br/>108 CSV - agencies across 5 categories"]
+        FB["FacebookGroups<br/>5 CSV + 3 XLSX - communities"]
+        SK["Skool<br/>SkoolCommunities + SkoolDM"]
     end
 
-    subgraph PIPELINE["⚙ Ingestion Pipeline (LangGraph)"]
-        SC[Scanner\ndiscovers all 163 files]
-        NR[Normalizers\nfeedspot · xlist · clutch\nfacebook · skool]
-        DD[Dedup Engine\nsha256 primary key\nrapidfuzz Jaro-Winkler fallback]
-        EM[Embedder\nOllama nomic-embed-text\nbatch 50 · exponential backoff · resume]
-        LD[Loader\nNeo4j MERGE · Qdrant upsert]
+    subgraph PIPELINE["Ingestion Pipeline - LangGraph"]
+        SC["Scanner<br/>discovers all 163 files"]
+        NR["Normalizers<br/>feedspot - xlist - clutch - facebook - skool"]
+        DD["Dedup Engine<br/>sha256 primary key<br/>rapidfuzz Jaro-Winkler fallback"]
+        EM["Embedder<br/>Ollama nomic-embed-text<br/>batch 50 - exponential backoff - resume"]
+        LD["Loader<br/>Neo4j MERGE + Qdrant upsert"]
     end
 
-    subgraph GRAPH_DB["🗄 Graph Store"]
-        N4J[(Neo4j 5\nNodes + Edges\nGDS plugin)]
-        QD[(Qdrant\n3 collections\n768-dim vectors)]
+    subgraph GRAPH_DB["Graph Store"]
+        N4J[("Neo4j 5<br/>Nodes + Edges<br/>GDS plugin")]
+        QD[("Qdrant<br/>3 collections<br/>768-dim vectors")]
     end
 
-    subgraph INTELLIGENCE["🧠 Graph Intelligence"]
-        GDS[GDS Algorithms\nPageRank · Louvain\nbetweenness · node2vec]
-        SCR[Opportunity Scorer\n6-component formula\n× 4 venture contexts]
-        WT[Weak Tie Detector\nhigh betweenness + low cosine sim]
-        EGO[Ego Network\n1-hop · 2-hop subgraphs]
+    subgraph INTELLIGENCE["Graph Intelligence"]
+        GDS["GDS Algorithms<br/>PageRank - Louvain<br/>betweenness - node2vec"]
+        SCR["Opportunity Scorer<br/>6-component formula<br/>x4 venture contexts"]
+        WT["Weak Tie Detector<br/>high betweenness + low cosine sim"]
+        EGO["Ego Network<br/>1-hop and 2-hop subgraphs"]
     end
 
-    subgraph RAG["💬 RAG Layer"]
-        RET[Hybrid Retriever\nQdrant top-K → Neo4j hop filter → re-rank]
-        AGT[LangGraph Agent\nllama3 via Ollama]
+    subgraph RAG["RAG Layer"]
+        RET["Hybrid Retriever<br/>Qdrant top-K then Neo4j hop filter then re-rank"]
+        AGT["LangGraph Agent<br/>llama3 via Ollama"]
     end
 
-    subgraph API["🔌 FastAPI Backend :8001"]
-        EP_DASH[/dashboard/stats]
-        EP_OPP[/opportunities/feed]
-        EP_GRAPH[/graph/ego]
-        EP_CHAT[/chat/query]
-        EP_PIPE[/pipeline/run]
-        WS[WebSocket\n/ws/pipeline\nlive progress]
+    subgraph API["FastAPI Backend - port 8001"]
+        EP_DASH["GET /dashboard/stats"]
+        EP_OPP["GET /opportunities/feed"]
+        EP_GRAPH["GET /graph/ego"]
+        EP_CHAT["POST /chat/query"]
+        EP_PIPE["POST /pipeline/run"]
+        WS["WebSocket /ws/pipeline<br/>live progress"]
     end
 
-    subgraph UI["🖥 React Frontend :5173"]
-        PG1[Dashboard\ncorpus stats · top-10 per venture]
-        PG2[Graph Explorer\nCytoscape.js force-directed]
-        PG3[Opportunity Feed\ninfinite scroll · intent modes]
-        PG4[RAG Chat\nhybrid graph + vector Q&A]
-        PG5[Pipeline Control\nlive log · embedding progress]
+    subgraph UI["React Frontend - port 5173"]
+        PG1["Dashboard<br/>corpus stats - top-10 per venture"]
+        PG2["Graph Explorer<br/>Cytoscape.js force-directed"]
+        PG3["Opportunity Feed<br/>infinite scroll - intent modes"]
+        PG4["RAG Chat<br/>hybrid graph + vector Q&A"]
+        PG5["Pipeline Control<br/>live log - embedding progress"]
     end
 
     DATA --> SC
