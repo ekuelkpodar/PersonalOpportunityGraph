@@ -1,0 +1,41 @@
+# ── Data sources (bring your own) ────────────────────────────────────────────
+feedspot/
+XList/
+Clutch/
+FacebookGroups/
+Skool/
+
+# ── Runtime databases ─────────────────────────────────────────────────────────
+*.db
+*.db-shm
+*.db-wal
+
+# ── Python ────────────────────────────────────────────────────────────────────
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+
+# ── Node / Frontend ───────────────────────────────────────────────────────────
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# ── Environment & secrets ─────────────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+
+# ── OS ────────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ── Logs ─────────────────────────────────────────────────────────────────────
+*.log
+/tmp/
