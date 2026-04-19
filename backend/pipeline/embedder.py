@@ -56,39 +56,34 @@ def _mark_embedded(conn: sqlite3.Connection, node_id: str, node_type: str) -> No
 
 def _embed_texts_ollama(texts: List[str]) -> List[Optional[List[float]]]:
     """
-    Call Ollama /api/embeddings for a list of texts.
-    Returns list of embedding vectors (or None on failure).
+    Call Ollama /api/embed for a batch of texts (Ollama >= 0.1.26).
+    Returns list of embedding vectors (or None on failure per text).
     """
-    results: List[Optional[List[float]]] = []
+    if not texts:
+        return []
 
-    for text in texts:
-        backoff = EMBED_INITIAL_BACKOFF
-        for attempt in range(EMBED_MAX_RETRIES):
-            try:
-                resp = httpx.post(
-                    f"{OLLAMA_BASE_URL}/api/embeddings",
-                    json={"model": OLLAMA_EMBED_MODEL, "prompt": text},
-                    timeout=60.0,
-                )
-                resp.raise_for_status()
-                data = resp.json()
-                embedding = data.get("embedding")
-                if embedding and len(embedding) > 0:
-                    results.append(embedding)
-                    break
-                else:
-                    results.append(None)
-                    break
-            except Exception as e:
-                if attempt < EMBED_MAX_RETRIES - 1:
-                    time.sleep(backoff)
-                    backoff *= EMBED_BACKOFF_MULTIPLIER
-                else:
-                    results.append(None)
-        else:
-            results.append(None)
+    backoff = EMBED_INITIAL_BACKOFF
+    for attempt in range(EMBED_MAX_RETRIES):
+        try:
+            resp = httpx.post(
+                f"{OLLAMA_BASE_URL}/api/embed",
+                json={"model": OLLAMA_EMBED_MODEL, "input": texts},
+                timeout=120.0,
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            embeddings = data.get("embeddings", [])
+            # Pad with None if fewer embeddings returned than inputs
+            results: List[Optional[List[float]]] = list(embeddings)
+            while len(results) < len(texts):
+                results.append(None)
+            return results
+        except Exception:
+            if attempt < EMBED_MAX_RETRIES - 1:
+                time.sleep(backoff)
+                backoff *= EMBED_BACKOFF_MULTIPLIER
 
-    return results
+    return [None] * len(texts)
 
 
 def _build_text_for_node(node: Any, node_type: str) -> str:

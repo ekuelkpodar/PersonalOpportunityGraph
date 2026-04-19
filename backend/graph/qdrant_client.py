@@ -6,23 +6,35 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional, Tuple
 
 from qdrant_client import QdrantClient
-from qdrant_client.models import Filter, FieldCondition, MatchValue, ScoredPoint
+from qdrant_client.models import Filter, FieldCondition, MatchValue, ScoredPoint, VectorParams, Distance
 
 from backend.config import (
     QDRANT_HOST, QDRANT_PORT,
     QDRANT_COLLECTION_PROFILES,
     QDRANT_COLLECTION_COMPANIES,
     QDRANT_COLLECTION_COMMUNITIES,
+    QDRANT_VECTOR_DIM,
 )
 
 
 _client: Optional[QdrantClient] = None
 
 
+def _ensure_collections(client: QdrantClient) -> None:
+    existing = {c.name for c in client.get_collections().collections}
+    for name in [QDRANT_COLLECTION_PROFILES, QDRANT_COLLECTION_COMPANIES, QDRANT_COLLECTION_COMMUNITIES]:
+        if name not in existing:
+            client.create_collection(
+                collection_name=name,
+                vectors_config=VectorParams(size=QDRANT_VECTOR_DIM, distance=Distance.COSINE),
+            )
+
+
 def get_client() -> QdrantClient:
     global _client
     if _client is None:
         _client = QdrantClient(host=QDRANT_HOST, port=QDRANT_PORT)
+        _ensure_collections(_client)
     return _client
 
 

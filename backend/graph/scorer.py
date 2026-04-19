@@ -64,15 +64,23 @@ def compute_novelty(node: Dict[str, Any], relevance: float) -> float:
 def score_node(
     node: Dict[str, Any],
     venture_context: str,
+    ego_vectors: Optional[Dict[str, List[float]]] = None,
 ) -> Dict[str, float]:
     """
     Compute all 6 score components for a single node.
+    Pass ego_vectors to avoid re-embedding venture contexts per node.
     Returns breakdown dict + final opportunity_score.
     """
     node_id   = node.get("id") or node.get("node_id", "")
     node_type = (node.get("_labels") or node.get("labels") or ["Person"])[0]
 
-    relevance      = compute_relevance(node_id, venture_context, node_type)
+    if ego_vectors is not None:
+        from backend.graph.qdrant_client import get_vector, _cosine
+        node_vec = get_vector(node_id, node_type)
+        ego_vec = ego_vectors.get(venture_context)
+        relevance = _cosine(ego_vec, node_vec) if (ego_vec and node_vec) else 0.0
+    else:
+        relevance = compute_relevance(node_id, venture_context, node_type)
     reachability   = compute_reachability(node_id)
     influence      = compute_influence(node)
     responsiveness = compute_responsiveness(node)
@@ -147,6 +155,10 @@ def run_scoring_job() -> None:
     # Run GDS algorithms first
     run_all_gds()
 
+    # Embed ego venture contexts once — reused for every node
+    from backend.pipeline.embedder import embed_ego_variants
+    ego_vectors = embed_ego_variants()
+
     # Fetch all non-ego nodes
     rows = run_query(
         """
@@ -167,7 +179,7 @@ def run_scoring_job() -> None:
         update_props: Dict[str, Any] = {}
 
         for venture in EGO_VENTURE_CONTEXTS.keys():
-            breakdown = score_node(node, venture)
+            breakdown = score_node(node, venture, ego_vectors=ego_vectors)
             score_val = breakdown["opportunity_score"]
 
             update_props[f"opportunity_score_{venture}"]    = score_val

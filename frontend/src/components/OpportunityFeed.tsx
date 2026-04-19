@@ -22,7 +22,7 @@ interface Filters {
 export default function OpportunityFeed() {
   const [venture, setVenture] = useState<VentureContext>('applied_insights');
   const [intent, setIntent] = useState<IntentMode>('Exploit');
-  const [filters, setFilters] = useState<Filters>({ node_types: [], warmth_tiers: [], min_score: 0, location: '', topic_cluster: '' });
+  const [filters, setFilters] = useState<Filters>({ node_types: [], warmth_tiers: ['hot', 'warm', 'cool', 'cold'], min_score: 0, location: '', topic_cluster: '' });
   const [selectedNode, setSelectedNode] = useState<NodeSummary | null>(null);
   const [actionNode, setActionNode] = useState<NodeSummary | null>(null);
   const qc = useQueryClient();

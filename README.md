@@ -1,6 +1,6 @@
 # Personal Opportunity Graph
 
-A full-stack, locally-hosted network intelligence tool that ingests 163 CSV/XLSX files across 5 data sources, normalizes them into a graph database (Neo4j) and vector database (Qdrant), computes multi-dimensional opportunity scores, and surfaces the results through a modern web UI.
+A full-stack, locally-hosted network intelligence tool that ingests ~274k rows across 5 XLSX/CSV data sources, normalizes them into a graph database (Neo4j) and vector database (Qdrant), computes multi-dimensional opportunity scores, and surfaces the results through a modern web UI.
 
 Built for a single ego node — you — to answer the question: **"Who in my network should I reach out to, and why?"**
 
@@ -8,84 +8,23 @@ Built for a single ego node — you — to answer the question: **"Who in my net
 
 ## Architecture
 
-```mermaid
-flowchart TD
-    subgraph DATA["Data Sources - bring your own"]
-        F["Feedspot<br/>16 CSV - blogs and publishers"]
-        X["XList / Scoble<br/>26 CSV - AI people and companies"]
-        C["Clutch<br/>108 CSV - agencies across 5 categories"]
-        FB["FacebookGroups<br/>5 CSV + 3 XLSX - communities"]
-        SK["Skool<br/>SkoolCommunities + SkoolDM"]
-    end
+![System Architecture](Image/opportunity_graph_system_architecture.svg)
 
-    subgraph PIPELINE["Ingestion Pipeline - LangGraph"]
-        SC["Scanner<br/>discovers all 163 files"]
-        NR["Normalizers<br/>feedspot - xlist - clutch - facebook - skool"]
-        DD["Dedup Engine<br/>sha256 primary key<br/>rapidfuzz Jaro-Winkler fallback"]
-        EM["Embedder<br/>Ollama nomic-embed-text<br/>batch 50 - exponential backoff - resume"]
-        LD["Loader<br/>Neo4j MERGE + Qdrant upsert"]
-    end
+---
 
-    subgraph GRAPH_DB["Graph Store"]
-        N4J[("Neo4j 5<br/>Nodes + Edges<br/>GDS plugin")]
-        QD[("Qdrant<br/>3 collections<br/>768-dim vectors")]
-    end
+## UI Screenshots
 
-    subgraph INTELLIGENCE["Graph Intelligence"]
-        GDS["GDS Algorithms<br/>PageRank - Louvain<br/>betweenness - node2vec"]
-        SCR["Opportunity Scorer<br/>6-component formula<br/>x4 venture contexts"]
-        WT["Weak Tie Detector<br/>high betweenness + low cosine sim"]
-        EGO["Ego Network<br/>1-hop and 2-hop subgraphs"]
-    end
+### Dashboard — Corpus Stats & Top Opportunities
+![Dashboard Overview](Image/Dashboard-1.png)
 
-    subgraph RAG["RAG Layer"]
-        RET["Hybrid Retriever<br/>Qdrant top-K then Neo4j hop filter then re-rank"]
-        AGT["LangGraph Agent<br/>llama3 via Ollama"]
-    end
+### Opportunity Feed — Ranked by Score
+![Opportunity Feed](Image/Dashboard-2.png)
 
-    subgraph API["FastAPI Backend - port 8001"]
-        EP_DASH["GET /dashboard/stats"]
-        EP_OPP["GET /opportunities/feed"]
-        EP_GRAPH["GET /graph/ego"]
-        EP_CHAT["POST /chat/query"]
-        EP_PIPE["POST /pipeline/run"]
-        WS["WebSocket /ws/pipeline<br/>live progress"]
-    end
+### Graph Explorer — Force-Directed Network
+![Graph Explorer](Image/Dashboard-3.png)
 
-    subgraph UI["React Frontend - port 5173"]
-        PG1["Dashboard<br/>corpus stats - top-10 per venture"]
-        PG2["Graph Explorer<br/>Cytoscape.js force-directed"]
-        PG3["Opportunity Feed<br/>infinite scroll - intent modes"]
-        PG4["RAG Chat<br/>hybrid graph + vector Q&A"]
-        PG5["Pipeline Control<br/>live log - embedding progress"]
-    end
-
-    DATA --> SC
-    SC --> NR
-    NR --> DD
-    DD --> EM
-    EM --> LD
-    LD --> N4J
-    LD --> QD
-    N4J --> GDS
-    GDS --> SCR
-    QD --> SCR
-    SCR --> WT
-    N4J --> EGO
-    N4J --> RET
-    QD --> RET
-    RET --> AGT
-    SCR --> EP_OPP
-    EGO --> EP_GRAPH
-    WT --> EP_OPP
-    AGT --> EP_CHAT
-    EP_DASH --> PG1
-    EP_OPP --> PG3
-    EP_GRAPH --> PG2
-    EP_CHAT --> PG4
-    EP_PIPE --> PG5
-    WS --> PG5
-```
+### RAG Chat — Graph-Aware Q&A
+![RAG Chat](Image/Dashboard-4.png)
 
 ---
 
@@ -151,28 +90,29 @@ PersonalOpportunityGraph/
 │   ├── main.py                  FastAPI entry point + APScheduler
 │   ├── config.py                All paths, DB connections, scoring weights
 │   ├── models.py                Pydantic models + node dataclasses
-│   ├── utils.py                 ID gen, text cleaning, follower parsing
+│   ├── utils.py                 ID gen, text cleaning, follower parsing, infer_category_type
 │   ├── pipeline/
 │   │   ├── orchestrator.py      LangGraph pipeline + WebSocket progress
-│   │   ├── scanner.py           Discovers all source files
+│   │   ├── scanner.py           Discovers all source files (CSV + XLSX)
 │   │   ├── dedup.py             sha256 + rapidfuzz Jaro-Winkler
-│   │   ├── embedder.py          Batch Ollama embeddings with resume
-│   │   ├── loader.py            Neo4j MERGE + Qdrant upsert
+│   │   ├── embedder.py          Batch Ollama embeddings — /api/embed, batch 50, resume
+│   │   ├── loader.py            Neo4j MERGE + Qdrant upsert + collection creation
 │   │   └── sources/
-│   │       ├── feedspot.py      V1/V2 schema variants
+│   │       ├── feedspot.py      5 XLSX files, multi-sheet, V1/V2 schema detection
 │   │       ├── xlist.py         Person + Company files, handles # in names
 │   │       ├── clutch.py        5 subdirectory categories, service % parsing
 │   │       ├── facebook.py      CSS-scraped CSV + structured XLSX
 │   │       └── skool.py         Communities + DM warm contacts
 │   ├── graph/
 │   │   ├── gds.py               PageRank, Louvain, betweenness, node2vec
-│   │   ├── scorer.py            6-component scoring + intent multipliers
+│   │   ├── scorer.py            6-component scoring, ego embeddings cached once per job
+│   │   ├── qdrant_client.py     Qdrant wrapper, auto-creates collections on first use
 │   │   ├── ego_network.py       1-hop/2-hop subgraph extraction
 │   │   ├── weak_ties.py         Bridge node detection
 │   │   ├── reachability.py      Path-length + warmth reachability score
 │   │   └── temporal.py          Trend signals + recency decay
 │   ├── rag/
-│   │   ├── retriever.py         Hybrid Qdrant → Neo4j hop filter
+│   │   ├── retriever.py         Hybrid Qdrant top-K then Neo4j hop filter
 │   │   └── agent.py             LangGraph RAG agent (llama3)
 │   ├── action/
 │   │   ├── engine.py            Next Best Action generator
@@ -185,7 +125,7 @@ PersonalOpportunityGraph/
 │       ├── opportunities.py
 │       ├── graph.py
 │       ├── chat.py
-│       ├── pipeline.py
+│       ├── pipeline.py          Scoring job runs in background thread
 │       ├── actions.py
 │       ├── feedback.py
 │       └── websocket.py
@@ -195,11 +135,17 @@ PersonalOpportunityGraph/
 │       └── components/
 │           ├── Dashboard.tsx    Corpus stats + top opportunities
 │           ├── GraphExplorer.tsx  Cytoscape.js force-directed graph
-│           ├── OpportunityFeed.tsx  Infinite scroll ranked feed
+│           ├── OpportunityFeed.tsx  Infinite scroll ranked feed, all warmth tiers on by default
 │           ├── RagChat.tsx      Graph-aware chat interface
 │           ├── PipelineControl.tsx  Live log + pipeline controls
 │           ├── ActionDrawer.tsx Next Best Action + outreach drafts
 │           └── ScoreRadar.tsx   Radar chart score breakdown
+├── Image/
+│   ├── opportunity_graph_system_architecture.svg
+│   ├── Dashboard-1.png
+│   ├── Dashboard-2.png
+│   ├── Dashboard-3.png
+│   └── Dashboard-4.png
 ├── docker-compose.yml
 ├── requirements.txt
 ├── start.sh
@@ -221,7 +167,12 @@ PersonalOpportunityGraph/
 This repository does **not** include any data files. You must supply your own CSVs/XLSXs in the following structure:
 
 ```
-feedspot/         — blogs_1.csv through blogs_16.csv
+feedspot/
+  _BloggerOutreach_Blogs_FullDB_*.xlsx
+  _BloggerOutreach_Magazines_FullDB_*.xlsx
+  _BloggerOutreach_Podcasts_FullDB_*.xlsx
+  _BloggerOutreach_Youtube_FullDB_*.xlsx
+  _BloggerOutreach_Newsletters_FullDB_*.xlsx
 XList/            — Scoble Twitter/X list exports (CSV)
 Clutch/
   DigitalMarketing Clutch/
@@ -262,6 +213,8 @@ Open **http://localhost:5173** → go to the **Pipeline** tab → click **Run Pi
 
 The pipeline will scan all data files, normalize, dedup, embed, load into Neo4j + Qdrant, and run the initial opportunity scoring pass. Progress streams live via WebSocket.
 
+Then click **Run Scoring** to compute opportunity scores across all 4 venture contexts. Scores appear in the Opportunity Feed and Dashboard as they are written.
+
 ---
 
 ## Ego Configuration
@@ -293,6 +246,16 @@ EGO_VENTURE_CONTEXTS = {
 | **Opportunity Feed** | Infinite scroll ranked by score, filter by type/warmth/location, Next Best Action drawer |
 | **RAG Chat** | Ask questions over the graph in natural language with cited node sources |
 | **Pipeline Control** | Run/monitor ingestion, live log viewer, embedding progress, re-run scoring |
+
+---
+
+## Key Implementation Notes
+
+- **Feedspot normalizer** handles 5 XLSX files with multi-sheet layouts and two schema variants (V1: col0=`Id`, V2: col0=`Sr.no`) detected per sheet from the header row. Sub-author rows (empty Site URL but Author Name present) are linked to the last seen publisher via `HAS_AUTHOR`.
+- **Ollama embedding endpoint** uses `/api/embed` (not the deprecated `/api/embeddings`) with batch input — compatible with Ollama 0.20.5+.
+- **Qdrant collections** are created automatically on first use by both the loader and the graph query client — no manual setup required.
+- **Scoring job** runs in a FastAPI `BackgroundTask` thread so the API stays responsive. Ego venture embeddings are computed once per job run and reused across all 584k nodes.
+- **Topic clusters** cover 23 domains including AI governance, trucking/logistics, crypto/web3, health/wellness, real estate, and more — used for `topic_cluster` node property and feed filtering.
 
 ---
 

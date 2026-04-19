@@ -3,10 +3,11 @@ pipeline.py — Pipeline control API endpoints.
 """
 from __future__ import annotations
 
+import asyncio
 import sqlite3
 from typing import Any, Dict
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Query
 from pydantic import BaseModel
 
 from backend.config import PIPELINE_PROGRESS_DB
@@ -68,14 +69,11 @@ async def get_pipeline_status():
 
 
 @router.post("/score/run")
-async def run_scoring():
-    """Manually trigger the opportunity scoring job."""
-    try:
-        from backend.graph.scorer import run_scoring_job
-        run_scoring_job()
-        return {"status": "done", "message": "Scoring complete"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+async def run_scoring(background_tasks: BackgroundTasks):
+    """Manually trigger the opportunity scoring job (runs in background thread)."""
+    from backend.graph.scorer import run_scoring_job
+    background_tasks.add_task(asyncio.to_thread, run_scoring_job)
+    return {"status": "started", "message": "Scoring job running in background"}
 
 
 @router.get("/source-stats")
