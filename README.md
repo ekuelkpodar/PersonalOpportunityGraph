@@ -8,6 +8,10 @@ Built for a single ego node — you — to answer the question: **"Who in my net
 
 ## System Architecture
 
+![System Architecture](Image/opportunity_graph_system_architecture.svg)
+
+### Architecture Flowchart
+
 ```mermaid
 flowchart TD
     subgraph SOURCES["Data Sources — bring your own"]
