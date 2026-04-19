@@ -198,11 +198,20 @@ EGO_VENTURE_CONTEXTS = {
 
 # Feedspot
 FEEDSPOT_DIR = _p("feedspot")
-FEEDSPOT_FILES = [_p("feedspot", f"blogs_{i}.csv") for i in range(1, 17)]
+FEEDSPOT_FILES = [
+    _p("feedspot", "_BloggerOutreach_Blogs_FullDB_20K_UPDATED.xlsx"),
+    _p("feedspot", "_BloggerOutreach_Magazines_FullDB_10K_UPDATED.xlsx"),
+    _p("feedspot", "_BloggerOutreach_Podcasts_FullDB_20K_UPDATED.xlsx"),
+    _p("feedspot", "_BloggerOutreach_Youtube_FullDB_70K_UPDATED.xlsx"),
+    _p("feedspot", "_BloggerOutreach_Newsletters_FullDB_10K_UPDATED.xlsx"),
+]
 
-# Feedspot schema variants
-FEEDSPOT_V1_INDICES = {1,2,3,4,5,6,7,8,9,10,13}
-FEEDSPOT_V2_INDICES = {11,12,14,15,16}
+# Expected sheet names per file (used for validation/logging only)
+FEEDSPOT_EXPECTED_SHEETS = [
+    "Blogs", "Magazines", "Podcasts", "YouTube Channels", "Newsletters",
+    "Tech", "Marketing", "Business", "Health", "Finance",
+    "Food", "Travel", "Education", "Entertainment", "Sports",
+]
 
 # XList / Scoble
 XLIST_DIR = _p("XList")
@@ -289,6 +298,32 @@ TOPIC_CLUSTERS = {
                          "transformer", "llm architecture"],
     "community":        ["community", "group", "network", "skool", "facebook group",
                          "discord", "slack"],
+    "health_wellness":  ["health", "wellness", "fitness", "nutrition", "mental health",
+                         "meditation", "yoga", "biohacking", "longevity"],
+    "photography":      ["photography", "photo", "camera", "lightroom", "photoshop",
+                         "portrait", "landscape", "videography"],
+    "real_estate":      ["real estate", "property", "mortgage", "investing",
+                         "landlord", "reit", "commercial real estate"],
+    "education":        ["education", "elearning", "course", "tutoring", "edtech",
+                         "curriculum", "university", "teaching", "student"],
+    "food_cooking":     ["food", "cooking", "recipe", "chef", "culinary", "restaurant",
+                         "baking", "nutrition", "meal prep"],
+    "travel":           ["travel", "tourism", "destination", "backpacking", "hotel",
+                         "flight", "digital nomad", "expat", "adventure"],
+    "business_finance":  ["finance", "investing", "stock", "trading", "accounting",
+                          "banking", "wealth", "personal finance", "economy"],
+    "parenting_family":  ["parenting", "family", "kids", "mom", "dad", "baby",
+                          "childcare", "homeschool", "pregnancy"],
+    "entertainment":    ["entertainment", "movies", "tv", "streaming", "music",
+                         "gaming", "esports", "celebrity", "pop culture"],
+    "crypto_web3":      ["crypto", "bitcoin", "ethereum", "nft", "defi", "web3",
+                         "blockchain", "dao", "token", "wallet"],
+    "sports_outdoors":  ["sports", "outdoors", "hiking", "running", "cycling",
+                         "football", "basketball", "soccer", "fitness"],
+    "lgbtq":            ["lgbtq", "lgbt", "queer", "transgender", "pride",
+                         "gay", "lesbian", "bisexual", "nonbinary"],
+    "local_regional":   ["local", "regional", "city", "neighborhood", "community news",
+                         "small business", "chamber of commerce"],
 }
 
 # ── Clutch category name normalizer ──────────────────────────────────────────

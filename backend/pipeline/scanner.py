@@ -34,7 +34,7 @@ def _glob_xlsx(directory: str) -> List[str]:
 
 
 def scan_feedspot() -> List[str]:
-    return _glob_csvs(FEEDSPOT_DIR)
+    return sorted(_glob_csvs(FEEDSPOT_DIR) + _glob_xlsx(FEEDSPOT_DIR))
 
 
 def scan_xlist() -> Dict[str, List[str]]:

@@ -320,6 +320,29 @@ def compute_confidence(num_sources: int,
     return round(min(score, 1.0), 4)
 
 
+# ── Category Type Inference ──────────────────────────────────────────────────
+
+def infer_category_type(category: str, name: str = "", description: str = "") -> str:
+    """Infer Publisher category_type from category string and optional name/description."""
+    cat_lower = (category or "").lower()
+    if "podcast" in cat_lower:
+        return "Podcast"
+    if "youtube" in cat_lower or "channel" in cat_lower:
+        return "YouTube"
+    if "magazine" in cat_lower:
+        return "Magazine"
+    if "newsletter" in cat_lower:
+        return "Newsletter"
+    combined = (name + " " + description).lower()
+    if "podcast" in combined:
+        return "Podcast"
+    if "youtube" in combined or "channel" in combined:
+        return "YouTube"
+    if "magazine" in combined or "journal" in combined:
+        return "Magazine"
+    return "Blog"
+
+
 # ── Topic Clustering ─────────────────────────────────────────────────────────
 
 def infer_topic_cluster(text: str) -> Optional[str]:
